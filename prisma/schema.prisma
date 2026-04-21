@@ -1,0 +1,106 @@
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  FACEBOOK
+  OTP
+}
+
+enum UserRole {
+  ARTIST
+  BUYER
+  ORGANIZER
+  ADMIN
+}
+
+// ─────────────────────────────────────────────
+// USER TABLE
+// ─────────────────────────────────────────────
+
+model User {
+  id            String       @id @default(uuid())
+  email         String?      @unique
+  phone         String?      @unique
+  passwordHash  String?
+  provider      AuthProvider @default(EMAIL)
+  role          UserRole     @default(BUYER)
+  isVerified    Boolean      @default(false)
+  isActive      Boolean      @default(true)
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  sessions      Session[]
+  otpRecords    OtpVerification[]
+  socialAccounts SocialAccount[]
+
+  @@index([email])
+  @@index([phone])
+}
+
+
+// ─────────────────────────────────────────────
+// SOCIAL LOGIN (Google / Facebook)
+// ─────────────────────────────────────────────
+
+model SocialAccount {
+  id            String   @id @default(uuid())
+  userId        String
+  provider      AuthProvider
+  providerId    String   // Google ID / Facebook ID
+  email         String?
+
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@index([userId])
+}
+
+
+// ─────────────────────────────────────────────
+// SESSION (Refresh Token)
+// ─────────────────────────────────────────────
+
+model Session {
+  id            String   @id @default(uuid())
+  userId        String
+  refreshToken  String   @unique
+  deviceInfo    Json?
+  ipAddress     String?
+
+  expiresAt     DateTime
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+
+// ─────────────────────────────────────────────
+// OTP SYSTEM
+// ─────────────────────────────────────────────
+
+model OtpVerification {
+  id          String   @id @default(uuid())
+  userId      String?
+  phone       String
+  otpHash     String
+  attempts    Int      @default(0)
+
+  expiresAt   DateTime
+  verifiedAt  DateTime?
+
+  createdAt   DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([phone])
+  @@index([expiresAt])
+}
