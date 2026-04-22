@@ -4,6 +4,14 @@ const bcrypt    = require('bcryptjs');
 const prisma    = require('../config/db');
 const AppError  = require('../utils/AppError');
 const { signAccessToken, signRefreshToken } = require('../utils/jwtHelper');
+const {
+  generateOtp,
+  hashOtp,
+  verifyOtpHash,
+  getOtpExpiry,
+  MAX_ATTEMPTS,
+  OTP_EXPIRY_MIN,
+} = require('../utils/otpHelper');
 
 // ─────────────────────────────────────────────
 // HELPERS
@@ -25,6 +33,36 @@ const getDeviceInfo = (req) => ({
   ip:        req?.ip || null,
   userAgent: req?.headers?.['user-agent'] || null,
 });
+
+/**
+ * Creates a session and returns tokens for the given user.
+ * Shared between login and OTP verify flows.
+ *
+ * @param {object} user - Safe user object (no passwordHash)
+ * @returns {{ user, accessToken, refreshToken }}
+ */
+const createSessionAndTokens = async (user) => {
+  const tokenPayload = {
+    id:         user.id,
+    email:      user.email,
+    role:       user.role,
+    isVerified: user.isVerified,
+  };
+  const accessToken  = signAccessToken(tokenPayload);
+  const refreshToken = signRefreshToken({ id: user.id });
+
+  // Persist refresh token in Session table
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+  await prisma.session.create({
+    data: {
+      userId:       user.id,
+      refreshToken,
+      expiresAt,
+    },
+  });
+
+  return { user, accessToken, refreshToken };
+};
 
 // ─────────────────────────────────────────────
 // SIGNUP
@@ -72,31 +110,12 @@ const signup = async ({ email, phone, password, role }) => {
     select: USER_SAFE_FIELDS,
   });
 
-  // 5. Sign tokens
-  const tokenPayload = {
-    id:         user.id,
-    email:      user.email,
-    role:       user.role,
-    isVerified: user.isVerified,
-  };
-  const accessToken  = signAccessToken(tokenPayload);
-  const refreshToken = signRefreshToken({ id: user.id });
-
-  // 6. Persist refresh token in Session table
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-  await prisma.session.create({
-    data: {
-      userId:       user.id,
-      refreshToken,
-      expiresAt,
-    },
-  });
-
-  return { user, accessToken, refreshToken };
+  // 5. Sign tokens & create session
+  return createSessionAndTokens(user);
 };
 
 // ─────────────────────────────────────────────
-// LOGIN
+// LOGIN (Email + Password)
 // ─────────────────────────────────────────────
 
 /**
@@ -133,31 +152,163 @@ const login = async ({ email, password }) => {
   // 5. Strip passwordHash before returning
   const { passwordHash: _removed, ...safeUser } = user;
 
-  // 6. Sign tokens
-  const tokenPayload = {
-    id:         safeUser.id,
-    email:      safeUser.email,
-    role:       safeUser.role,
-    isVerified: safeUser.isVerified,
-  };
-  const accessToken  = signAccessToken(tokenPayload);
-  const refreshToken = signRefreshToken({ id: safeUser.id });
+  // 6. Sign tokens & create session
+  return createSessionAndTokens(safeUser);
+};
 
-  // 7. Persist new session
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-  await prisma.session.create({
+// ─────────────────────────────────────────────
+// SEND OTP (Phone)
+// ─────────────────────────────────────────────
+
+/**
+ * Generates and stores an OTP for the given phone number.
+ * If no user exists with this phone, one is auto-created (OTP provider).
+ *
+ * In development, the OTP is logged to the console for testing.
+ *
+ * @param {{ phone: string }} data
+ * @returns {{ message: string }}
+ * @throws {AppError}
+ */
+const sendOtp = async ({ phone }) => {
+
+  // 1. Invalidate all previous unexpired OTPs for this phone
+  await prisma.otpVerification.updateMany({
+    where: {
+      phone,
+      verifiedAt: null,
+      expiresAt:  { gt: new Date() },
+    },
     data: {
-      userId:       safeUser.id,
-      refreshToken,
-      expiresAt,
+      expiresAt: new Date(),  // expire them immediately
     },
   });
 
-  return { user: safeUser, accessToken, refreshToken };
+  // 2. Generate new OTP
+  const otp     = generateOtp();
+  const otpHash = await hashOtp(otp);
+
+  // 3. Find or auto-create user for this phone
+  let user = await prisma.user.findUnique({ where: { phone } });
+
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        phone,
+        provider:   'OTP',
+        role:       'BUYER',
+        isVerified: false,
+        isActive:   true,
+      },
+    });
+  }
+
+  // 4. Store OTP record
+  await prisma.otpVerification.create({
+    data: {
+      phone,
+      userId:    user.id,
+      otpHash,
+      expiresAt: getOtpExpiry(),
+    },
+  });
+
+  // 5. Log OTP to console for testing (DEVELOPMENT ONLY)
+  console.log(`\n🔑 OTP for ${phone} is ${otp}\n`);
+
+  return {
+    message: `OTP sent to ${phone}. It will expire in ${OTP_EXPIRY_MIN} minutes.`,
+  };
+};
+
+// ─────────────────────────────────────────────
+// VERIFY OTP (Phone + OTP → Login)
+// ─────────────────────────────────────────────
+
+/**
+ * Verifies the OTP for a phone number and returns tokens on success.
+ *
+ * @param {{ phone: string, otp: string }} data
+ * @returns {{ user, accessToken, refreshToken }}
+ * @throws {AppError}
+ */
+const verifyOtp = async ({ phone, otp }) => {
+
+  // 1. Find the latest unexpired, unverified OTP for this phone
+  const otpRecord = await prisma.otpVerification.findFirst({
+    where: {
+      phone,
+      verifiedAt: null,
+      expiresAt:  { gt: new Date() },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (!otpRecord) {
+    throw new AppError('OTP has expired or was not requested. Please request a new OTP.', 400);
+  }
+
+  // 2. Check max attempts
+  if (otpRecord.attempts >= MAX_ATTEMPTS) {
+    // Expire this OTP so it can't be tried again
+    await prisma.otpVerification.update({
+      where: { id: otpRecord.id },
+      data:  { expiresAt: new Date() },
+    });
+    throw new AppError('Maximum OTP attempts exceeded. Please request a new OTP.', 429);
+  }
+
+  // 3. Increment attempt counter
+  await prisma.otpVerification.update({
+    where: { id: otpRecord.id },
+    data:  { attempts: { increment: 1 } },
+  });
+
+  // 4. Verify OTP hash
+  const isValid = await verifyOtpHash(otp, otpRecord.otpHash);
+  if (!isValid) {
+    const remaining = MAX_ATTEMPTS - (otpRecord.attempts + 1);
+    throw new AppError(
+      `Invalid OTP. ${remaining} attempt(s) remaining.`,
+      401,
+    );
+  }
+
+  // 5. Mark OTP as verified
+  await prisma.otpVerification.update({
+    where: { id: otpRecord.id },
+    data:  { verifiedAt: new Date() },
+  });
+
+  // 6. Get user & check active status
+  const user = await prisma.user.findUnique({
+    where: { phone },
+    select: USER_SAFE_FIELDS,
+  });
+
+  if (!user) {
+    throw new AppError('User not found.', 404);
+  }
+
+  if (!user.isActive) {
+    throw new AppError('Your account has been deactivated. Please contact support.', 403);
+  }
+
+  // 7. Mark user as verified (phone verified via OTP)
+  if (!user.isVerified) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data:  { isVerified: true },
+    });
+    user.isVerified = true;
+  }
+
+  // 8. Sign tokens & create session
+  return createSessionAndTokens(user);
 };
 
 // ─────────────────────────────────────────────
 // EXPORTS
 // ─────────────────────────────────────────────
 
-module.exports = { signup, login };
+module.exports = { signup, login, sendOtp, verifyOtp };

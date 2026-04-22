@@ -4,7 +4,7 @@ const authService = require('../services/auth.service');
 
 // ─────────────────────────────────────────────
 // LOGIN CONTROLLER
-// POST /api/auth/login
+// POST /api/login
 // ─────────────────────────────────────────────
 
 /**

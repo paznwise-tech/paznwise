@@ -8,9 +8,11 @@ require('dotenv').config();
 // ─────────────────────────────────────────────
 // IMPORTS
 // ─────────────────────────────────────────────
-const express    = require('express');
-const cors       = require('cors');
-const authRoutes = require('./routes/auth.routes');
+const express         = require('express');
+const cors            = require('cors');
+const swaggerUi       = require('swagger-ui-express');
+const swaggerSpec     = require('./swagger/swaggerConfig');
+const authRoutes      = require('./routes/auth.routes');
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
@@ -34,9 +36,29 @@ app.get('/', (req, res) => {
 });
 
 // ─────────────────────────────────────────────
+// SWAGGER DOCS
+// ─────────────────────────────────────────────
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss:      '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Paznwise API Docs',
+  swaggerOptions: {
+    persistAuthorization: true,
+    docExpansion:         'list',
+    filter:               true,
+    tryItOutEnabled:      true,
+  },
+}));
+
+// Serve raw OpenAPI JSON
+app.get('/api/docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
+
+// ─────────────────────────────────────────────
 // ROUTES
 // ─────────────────────────────────────────────
-app.use('/api/', authRoutes);   // POST /api/signup  |  POST /api/login
+app.use('/api/auth', authRoutes);   // POST /api/auth/signup | /api/auth/login | /api/auth/send-otp | /api/auth/verify-otp
 
 // ─────────────────────────────────────────────
 // 404 HANDLER
