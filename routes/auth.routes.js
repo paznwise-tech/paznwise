@@ -6,17 +6,20 @@ const router  = express.Router();
 // ─────────────────────────────────────────────
 // CONTROLLERS
 // ─────────────────────────────────────────────
-const { signup } = require('../controllers/signup.controller');
-const { login }  = require('../controllers/login.controller');
+const { signup }              = require('../controllers/signup.controller');
+const { login }               = require('../controllers/login.controller');
+const { sendOtp, verifyOtp }  = require('../controllers/otp.controller');
 
 // ─────────────────────────────────────────────
 // MIDDLEWARE
 // ─────────────────────────────────────────────
 const { authenticate, authorize, requireVerified } = require('../middleware/authMiddleware');
 
-const validate                 = require('../middleware/validate');
-const signupValidationSchema   = require('../schema/signupValidationSchema');
-const loginValidationSchema    = require('../schema/loginValidationSchema');
+const validate                     = require('../middleware/validate');
+const signupValidationSchema       = require('../schema/signupValidationSchema');
+const loginValidationSchema        = require('../schema/loginValidationSchema');
+const sendOtpValidationSchema      = require('../schema/sendOtpValidationSchema');
+const verifyOtpValidationSchema    = require('../schema/verifyOtpValidationSchema');
 
 // Pending — uncomment when ready:
 // const rateLimiter = require('../middleware/rateLimiter');
@@ -41,7 +44,7 @@ router.post(
 );
 
 /**
- * @route   POST /api/auth/login
+ * @route   POST /api/login
  * @desc    Login with email & password
  * @access  Public
  * @body    { email, password }
@@ -51,6 +54,32 @@ router.post(
   // rateLimiter,                          // ← coming soon
   validate(loginValidationSchema),          //  Joi validation active
   login                                     // controller
+);
+
+/**
+ * @route   POST /api/send-otp
+ * @desc    Send OTP to phone number for authentication
+ * @access  Public
+ * @body    { phone }
+ */
+router.post(
+  '/send-otp',
+  // rateLimiter,                          // ← coming soon
+  validate(sendOtpValidationSchema),        //  Joi validation active
+  sendOtp                                   // controller
+);
+
+/**
+ * @route   POST /api/verify-otp
+ * @desc    Verify OTP and login with phone number
+ * @access  Public
+ * @body    { phone, otp }
+ */
+router.post(
+  '/verify-otp',
+  // rateLimiter,                          // ← coming soon
+  validate(verifyOtpValidationSchema),      //  Joi validation active
+  verifyOtp                                 // controller
 );
 
 // ─────────────────────────────────────────────

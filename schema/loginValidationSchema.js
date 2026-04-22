@@ -4,7 +4,7 @@ const Joi = require('joi');
 
 // ─────────────────────────────────────────────
 // LOGIN VALIDATION SCHEMA
-// POST /api/auth/login
+// POST /api/login
 // ─────────────────────────────────────────────
 
 const loginValidationSchema = Joi.object({
