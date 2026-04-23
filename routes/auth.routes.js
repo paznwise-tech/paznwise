@@ -9,6 +9,7 @@ const router  = express.Router();
 const { signup }              = require('../controllers/signup.controller');
 const { login }               = require('../controllers/login.controller');
 const { sendOtp, verifyOtp }  = require('../controllers/otp.controller');
+const { logout }              = require('../controllers/logout.controller');
 
 // ─────────────────────────────────────────────
 // MIDDLEWARE
@@ -20,6 +21,7 @@ const signupValidationSchema       = require('../schema/signupValidationSchema')
 const loginValidationSchema        = require('../schema/loginValidationSchema');
 const sendOtpValidationSchema      = require('../schema/sendOtpValidationSchema');
 const verifyOtpValidationSchema    = require('../schema/verifyOtpValidationSchema');
+const logoutValidationSchema       = require('../schema/logoutValidationSchema');
 
 // Pending — uncomment when ready:
 // const rateLimiter = require('../middleware/rateLimiter');
@@ -80,6 +82,19 @@ router.post(
   // rateLimiter,                          // ← coming soon
   validate(verifyOtpValidationSchema),      //  Joi validation active
   verifyOtp                                 // controller
+);
+
+/**
+ * @route   POST /api/auth/logout
+ * @desc    Logout and revoke refresh token
+ * @access  Private (Requires Bearer Token)
+ * @body    { refreshToken }
+ */
+router.post(
+  '/logout',
+  authenticate,                             // Must be logged in to logout
+  validate(logoutValidationSchema),         // Check refreshToken in body
+  logout                                    // controller
 );
 
 // ─────────────────────────────────────────────

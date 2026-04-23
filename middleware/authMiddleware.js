@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 // CONSTANTS
 // ─────────────────────────────────────────────
 
-const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
+const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET;
 
 const TOKEN_ERRORS = {
   TokenExpiredError: {

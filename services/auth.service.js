@@ -308,7 +308,31 @@ const verifyOtp = async ({ phone, otp }) => {
 };
 
 // ─────────────────────────────────────────────
+// LOGOUT
+// ─────────────────────────────────────────────
+
+/**
+ * Revokes a refresh token by deleting its session from the database.
+ *
+ * @param {string} refreshToken
+ * @throws {AppError}
+ */
+const logout = async (refreshToken) => {
+  try {
+    await prisma.session.delete({
+      where: { refreshToken },
+    });
+  } catch (error) {
+    // Prisma error code P2025: Record to delete does not exist
+    if (error.code === 'P2025') {
+      throw new AppError('Invalid or already revoked refresh token.', 400);
+    }
+    throw error;
+  }
+};
+
+// ─────────────────────────────────────────────
 // EXPORTS
 // ─────────────────────────────────────────────
 
-module.exports = { signup, login, sendOtp, verifyOtp };
+module.exports = { signup, login, sendOtp, verifyOtp, logout };
