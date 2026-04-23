@@ -30,7 +30,7 @@ app.use(express.urlencoded({ extended: true }));
 app.get('/', (req, res) => {
   res.status(200).json({
     success: true,
-    message: 'Paznwise API is live.',
+    message: 'Paznwise API is live .',
     version: '1.0.0',
   });
 });

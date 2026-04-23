@@ -390,3 +390,72 @@
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
+// ═════════════════════════════════════════════
+//  POST /api/auth/logout
+// ═════════════════════════════════════════════
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Logout and revoke session
+ *     description: |
+ *       Revokes the user's session by deleting the provided **refresh token** from the database.
+ *       Once revoked, the refresh token can no longer be used to obtain new access tokens.
+ *
+ *       **Security:**
+ *       - Requires a valid **JWT Access Token** in the \`Authorization\` header.
+ *       - The \`refreshToken\` must be provided in the request body.
+ *
+ *       **Validation Rules:**
+ *       - \`refreshToken\` — Required, must be a valid token string.
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                 description: "The refresh token to be revoked."
+ *     responses:
+ *       200:
+ *         description: Logout successful, session revoked
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponse'
+ *             example:
+ *               success: true
+ *               message: "Logout successful. Session revoked."
+ *       400:
+ *         description: Invalid or already revoked refresh token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               success: false
+ *               message: "Invalid or already revoked refresh token."
+ *       401:
+ *         description: Unauthorized - Missing or invalid access token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       422:
+ *         description: Validation error - Refresh token missing
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
+ *       500:
+ *         description: Internal server error
+ */
