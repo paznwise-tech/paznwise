@@ -10,6 +10,7 @@ const { signup }              = require('../controllers/signup.controller');
 const { login }               = require('../controllers/login.controller');
 const { sendOtp, verifyOtp }  = require('../controllers/otp.controller');
 const { logout }              = require('../controllers/logout.controller');
+const { socialAuth }          = require('../controllers/socialAuth.controller');
 
 // ─────────────────────────────────────────────
 // MIDDLEWARE
@@ -22,6 +23,7 @@ const loginValidationSchema        = require('../schema/loginValidationSchema');
 const sendOtpValidationSchema      = require('../schema/sendOtpValidationSchema');
 const verifyOtpValidationSchema    = require('../schema/verifyOtpValidationSchema');
 const logoutValidationSchema       = require('../schema/logoutValidationSchema');
+const socialAuthValidationSchema   = require('../schema/socialAuthValidationSchema');
 
 // Pending — uncomment when ready:
 // const rateLimiter = require('../middleware/rateLimiter');
@@ -82,6 +84,18 @@ router.post(
   // rateLimiter,                          // ← coming soon
   validate(verifyOtpValidationSchema),      //  Joi validation active
   verifyOtp                                 // controller
+);
+
+/**
+ * @route   POST /api/auth/social
+ * @desc    Authenticate via Google or Facebook
+ * @access  Public
+ * @body    { provider, token }
+ */
+router.post(
+  '/social',
+  validate(socialAuthValidationSchema),
+  socialAuth
 );
 
 /**

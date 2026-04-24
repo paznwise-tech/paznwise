@@ -110,6 +110,61 @@
  */
 
 // ═════════════════════════════════════════════
+//  POST /api/auth/social
+// ═════════════════════════════════════════════
+
+/**
+ * @swagger
+ * /api/auth/social:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Authenticate via Google or Facebook
+ *     description: |
+ *       Authenticates a user using **OAuth 2.0** tokens from Google or Facebook.
+ *       - If the user exists and is linked to the provider → Login
+ *       - If the user exists (email match) but not linked → Link provider and login
+ *       - If the user does not exist → Create new account and login
+ *
+ *       **Requirements:**
+ *       - Google: Pass an \`id_token\`
+ *       - Facebook: Pass an \`access_token\`
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - provider
+ *               - token
+ *             properties:
+ *               provider:
+ *                 type: string
+ *                 enum: [google, facebook]
+ *                 example: google
+ *               token:
+ *                 type: string
+ *                 description: "OAuth 2.0 token (id_token for Google, access_token for Facebook)"
+ *     responses:
+ *       200:
+ *         description: Social login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
+ *       401:
+ *         description: Invalid OAuth token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       422:
+ *         description: Validation error
+ *       500:
+ *         description: Internal server error
+ */
+
+// ═════════════════════════════════════════════
 //  POST /api/auth/login
 // ═════════════════════════════════════════════
 
