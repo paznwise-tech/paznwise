@@ -318,6 +318,7 @@
  *             example:
  *               success: true
  *               message: "OTP sent to 9000000003. It will expire in 5 minutes."
+ *               otp: "123456"
  *       422:
  *         description: Validation error
  *         content:
