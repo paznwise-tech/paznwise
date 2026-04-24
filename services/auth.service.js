@@ -12,6 +12,7 @@ const {
   MAX_ATTEMPTS,
   OTP_EXPIRY_MIN,
 } = require('../utils/otpHelper');
+const { verifyGoogleToken, verifyFacebookToken } = require('../utils/socialAuthHelper');
 
 // ─────────────────────────────────────────────
 // HELPERS
@@ -26,6 +27,8 @@ const USER_SAFE_FIELDS = {
   provider:   true,
   isVerified: true,
   isActive:   true,
+  name:       true,
+  picture:    true,
   createdAt:  true,
 };
 
@@ -62,6 +65,103 @@ const createSessionAndTokens = async (user) => {
   });
 
   return { user, accessToken, refreshToken };
+};
+
+// ─────────────────────────────────────────────
+// SOCIAL LOGIN (Google / Facebook)
+// ─────────────────────────────────────────────
+
+/**
+ * Authenticates user via Google or Facebook.
+ * If user doesn't exist, a new account is created & linked.
+ *
+ * @param {{ provider: 'google'|'facebook', token: string }} data
+ * @returns {{ user, accessToken, refreshToken }}
+ * @throws {AppError}
+ */
+const socialLogin = async ({ provider, token }) => {
+  let profile;
+
+  // 1. Verify token & get profile
+  if (provider === 'google') {
+    profile = await verifyGoogleToken(token);
+  } else if (provider === 'facebook') {
+    profile = await verifyFacebookToken(token);
+  } else {
+    throw new AppError('Unsupported social provider.', 400);
+  }
+
+  const { email, providerId, name, picture } = profile;
+
+  // 2. Lookup existing social account
+  const authProvider = provider.toUpperCase();
+  const existingSocialAccount = await prisma.socialAccount.findUnique({
+    where: {
+      provider_providerId: {
+        provider: authProvider,
+        providerId,
+      },
+    },
+    include: { user: true },
+  });
+
+  if (existingSocialAccount) {
+    // Audit check: ensure user is active
+    if (!existingSocialAccount.user.isActive) {
+      throw new AppError('Your account has been deactivated.', 403);
+    }
+    const { passwordHash: _p, ...safeUser } = existingSocialAccount.user;
+    return createSessionAndTokens(safeUser);
+  }
+
+  // 3. User doesn't have this social account linked. 
+  //    Check if user exists with this email.
+  let user;
+  if (email) {
+    user = await prisma.user.findUnique({ where: { email } });
+  }
+
+  // 4. Record current timestamp for atomicity
+  const now = new Date();
+
+  // 5. Transaction: Create user (if needed) & Link Social Account
+  const result = await prisma.$transaction(async (tx) => {
+    
+    // Create user if not found via email
+    if (!user) {
+      user = await tx.user.create({
+        data: {
+          email,
+          name,
+          picture,
+          provider: authProvider,
+          isVerified: true, // Social emails are pre-verified
+          isActive: true,
+        },
+      });
+    }
+
+    // Link the provider
+    await tx.socialAccount.create({
+      data: {
+        userId: user.id,
+        provider: authProvider,
+        providerId,
+        email,
+      },
+    });
+
+    return user;
+  });
+
+  // 6. Map to safe fields
+  const safeUser = await prisma.user.findUnique({
+    where: { id: result.id },
+    select: USER_SAFE_FIELDS,
+  });
+
+  // 7. Success
+  return createSessionAndTokens(safeUser);
 };
 
 // ─────────────────────────────────────────────
@@ -335,4 +435,4 @@ const logout = async (refreshToken) => {
 // EXPORTS
 // ─────────────────────────────────────────────
 
-module.exports = { signup, login, sendOtp, verifyOtp, logout };
+module.exports = { signup, login, sendOtp, verifyOtp, logout, socialLogin };
