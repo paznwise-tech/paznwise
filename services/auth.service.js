@@ -318,6 +318,7 @@ const sendOtp = async ({ phone }) => {
 
   return {
     message: `OTP sent to ${phone}. It will expire in ${OTP_EXPIRY_MIN} minutes.`,
+    otp,
   };
 };
 
