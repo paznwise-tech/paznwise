@@ -36,6 +36,7 @@ enum UserRole {
 
 model User {
   id            String       @id @default(uuid())
+  username      String?      @unique
   email         String?      @unique
   phone         String?      @unique
   passwordHash  String?
@@ -53,6 +54,7 @@ model User {
   otpRecords    OtpVerification[]
   socialAccounts SocialAccount[]
 
+  @@index([username])
   @@index([email])
   @@index([phone])
 }

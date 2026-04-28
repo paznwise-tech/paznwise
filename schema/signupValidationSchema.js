@@ -28,6 +28,19 @@ const signupValidationSchema = Joi.object({
       'string.base':         'Phone must be a string.',
     }),
 
+  username: Joi.string()
+    .alphanum()
+    .min(3)
+    .max(30)
+    .trim()
+    .optional()
+    .messages({
+      'string.alphanum': 'Username must only contain alpha-numeric characters.',
+      'string.min':      'Username must be at least 3 characters long.',
+      'string.max':      'Username must not exceed 30 characters.',
+      'string.base':     'Username must be a string.',
+    }),
+
   password: Joi.string()
     .min(8)
     .max(64)
@@ -40,6 +53,14 @@ const signupValidationSchema = Joi.object({
       'any.required':        'Password is required.',
     }),
 
+  confirmPassword: Joi.string()
+    .valid(Joi.ref('password'))
+    .required()
+    .messages({
+      'any.only': 'Passwords do not match.',
+      'any.required': 'Confirm password is required.',
+    }),
+
   role: Joi.string()
     .valid('ARTIST', 'BUYER', 'ORGANIZER')
     .default('BUYER')
@@ -49,10 +70,10 @@ const signupValidationSchema = Joi.object({
     }),
 
 })
-  // At least one of email or phone must be provided
-  .or('email', 'phone')
+  // At least one of email, phone, or username must be provided
+  .or('email', 'phone', 'username')
   .messages({
-    'object.missing': 'Either email or phone number is required.',
+    'object.missing': 'Either email, phone number, or username is required.',
   });
 
 module.exports = signupValidationSchema;

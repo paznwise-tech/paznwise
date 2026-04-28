@@ -21,6 +21,7 @@ const { verifyGoogleToken, verifyFacebookToken, verifyAppleToken } = require('..
 /** Fields to return for the user object — never expose passwordHash */
 const USER_SAFE_FIELDS = {
   id:         true,
+  username:   true,
   email:      true,
   phone:      true,
   role:       true,
@@ -175,11 +176,11 @@ const socialLogin = async ({ provider, token, name: providedName }) => {
 /**
  * Registers a new user with EMAIL provider.
  *
- * @param {{ email: string, phone?: string, password: string, role?: string }} data
+ * @param {{ email: string, phone?: string, username?: string, password: string, role?: string }} data
  * @returns {{ user, accessToken, refreshToken }}
  * @throws {AppError}
  */
-const signup = async ({ email, phone, password, role }) => {
+const signup = async ({ email, phone, username, password, role }) => {
 
   // 1. Check duplicate email
   if (email) {
@@ -197,6 +198,14 @@ const signup = async ({ email, phone, password, role }) => {
     }
   }
 
+  // 2.5 Check duplicate username
+  if (username) {
+    const existingUsername = await prisma.user.findUnique({ where: { username } });
+    if (existingUsername) {
+      throw new AppError('An account with this username already exists.', 409);
+    }
+  }
+
   // 3. Hash password
   const passwordHash = await bcrypt.hash(password, 12);
 
@@ -204,6 +213,7 @@ const signup = async ({ email, phone, password, role }) => {
   const user = await prisma.user.create({
     data: {
       email,
+      username:     username || null,
       phone:        phone || null,
       passwordHash,
       provider:     'EMAIL',
@@ -223,17 +233,23 @@ const signup = async ({ email, phone, password, role }) => {
 // ─────────────────────────────────────────────
 
 /**
- * Authenticates a user with email + password.
+ * Authenticates a user with identifier (email, phone, username) + password.
  *
- * @param {{ email: string, password: string }} data
+ * @param {{ identifier: string, password: string }} data
  * @returns {{ user, accessToken, refreshToken }}
  * @throws {AppError}
  */
-const login = async ({ email, password }) => {
+const login = async ({ identifier, password }) => {
 
-  // 1. Find user by email (include passwordHash for comparison)
-  const user = await prisma.user.findUnique({
-    where: { email },
+  // 1. Find user by identifier (include passwordHash for comparison)
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { email: identifier },
+        { phone: identifier },
+        { username: identifier }
+      ]
+    },
     select: { ...USER_SAFE_FIELDS, passwordHash: true },
   });
 

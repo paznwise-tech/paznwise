@@ -9,16 +9,30 @@ const Joi = require('joi');
 
 const loginValidationSchema = Joi.object({
 
+  identifier: Joi.string().trim().messages({
+    'string.base': 'Identifier must be a string.',
+  }),
+
   email: Joi.string()
     .email({ tlds: { allow: false } })
     .lowercase()
     .trim()
-    .required()
     .messages({
       'string.email':   'Please provide a valid email address.',
       'string.base':    'Email must be a string.',
-      'any.required':   'Email is required.',
     }),
+
+  username: Joi.string().trim().messages({
+    'string.base': 'Username must be a string.',
+  }),
+
+  number: Joi.string().trim().messages({
+    'string.base': 'Number must be a string.',
+  }),
+
+  phone: Joi.string().trim().messages({
+    'string.base': 'Phone must be a string.',
+  }),
 
   password: Joi.string()
     .min(8)
@@ -30,6 +44,6 @@ const loginValidationSchema = Joi.object({
       'any.required':   'Password is required.',
     }),
 
-});
+}).or('identifier', 'email', 'username', 'number', 'phone');
 
 module.exports = loginValidationSchema;

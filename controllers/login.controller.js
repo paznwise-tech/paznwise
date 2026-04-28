@@ -21,9 +21,10 @@ const authService = require('../services/auth.service');
  */
 const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { identifier, email, username, number, phone, password } = req.body;
+    const loginIdentifier = identifier || email || username || number || phone;
 
-    const result = await authService.login({ email, password });
+    const result = await authService.login({ identifier: loginIdentifier, password });
 
     return res.status(200).json({
       success: true,

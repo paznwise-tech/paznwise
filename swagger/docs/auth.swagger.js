@@ -36,14 +36,22 @@
  *           schema:
  *             type: object
  *             required:
- *               - email
  *               - password
+ *               - confirmPassword
  *             properties:
  *               email:
  *                 type: string
  *                 format: email
  *                 example: user@example.com
- *                 description: User's email address (must be unique)
+ *                 description: "User's email address (must be unique)"
+ *               username:
+ *                 type: string
+ *                 example: john_doe
+ *                 description: "Username (alphanumeric, min 3, max 30)"
+ *               phone:
+ *                 type: string
+ *                 example: "9000000003"
+ *                 description: "Phone number — 10-digit or E.164 format (+919000000003)"
  *               password:
  *                 type: string
  *                 format: password
@@ -51,10 +59,11 @@
  *                 maxLength: 64
  *                 example: SecurePass@123
  *                 description: Password (min 8 chars, max 64)
- *               phone:
+ *               confirmPassword:
  *                 type: string
- *                 example: "9000000003"
- *                 description: "Phone number — 10-digit or E.164 format (+919000000003)"
+ *                 format: password
+ *                 example: SecurePass@123
+ *                 description: Must exactly match the password field
  *               role:
  *                 type: string
  *                 enum: [ARTIST, BUYER, ORGANIZER, ADMIN]
@@ -181,13 +190,13 @@
  * /api/auth/login:
  *   post:
  *     tags: [Auth]
- *     summary: Login with email & password
+ *     summary: Login with identifier (email, phone, or username) & password
  *     description: |
- *       Authenticates a user using **email and password**.
+ *       Authenticates a user using an **identifier (email, phone, or username) and password**.
  *       Returns JWT access & refresh tokens along with the user object.
  *
  *       **Validation Rules:**
- *       - `email` — Required, valid email format
+ *       - `identifier` (or `email`, `phone`, `username`, `number`) — Required
  *       - `password` — Required, min 8, max 64 characters
  *
  *       **Security:**
@@ -200,13 +209,12 @@
  *           schema:
  *             type: object
  *             required:
- *               - email
  *               - password
  *             properties:
- *               email:
+ *               identifier:
  *                 type: string
- *                 format: email
  *                 example: user@example.com
+ *                 description: "User's email, phone number, or username"
  *               password:
  *                 type: string
  *                 format: password
