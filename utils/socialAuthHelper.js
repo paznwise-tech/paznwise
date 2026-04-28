@@ -2,6 +2,7 @@
 
 const { OAuth2Client } = require('google-auth-library');
 const axios            = require('axios');
+const appleSignin      = require('apple-signin-auth');
 const AppError         = require('./AppError');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -59,7 +60,31 @@ const verifyFacebookToken = async (accessToken) => {
   }
 };
 
+/**
+ * Verifies an Apple Identity Token (JWT).
+ * 
+ * @param {string} idToken 
+ * @returns {Promise<{ email: string|null, providerId: string }>}
+ */
+const verifyAppleToken = async (idToken) => {
+  try {
+    const payload = await appleSignin.verifyIdToken(idToken, {
+      audience: process.env.APPLE_CLIENT_ID,
+      ignoreExpiration: false, // Ensure token is not expired
+    });
+
+    return {
+      email:      payload.email || null,
+      providerId: payload.sub,
+    };
+  } catch (error) {
+    console.error('[SocialAuthHelper] Apple verification error:', error.message);
+    throw new AppError('Failed to verify Apple token.', 401);
+  }
+};
+
 module.exports = {
   verifyGoogleToken,
   verifyFacebookToken,
+  verifyAppleToken,
 };

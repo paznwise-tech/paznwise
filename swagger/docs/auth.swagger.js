@@ -118,9 +118,9 @@
  * /api/auth/social:
  *   post:
  *     tags: [Auth]
- *     summary: Authenticate via Google or Facebook
+ *     summary: Authenticate via Google, Facebook, or Apple
  *     description: |
- *       Authenticates a user using **OAuth 2.0** tokens from Google or Facebook.
+ *       Authenticates a user using **OAuth 2.0** tokens from Google, Facebook, or Apple.
  *       - If the user exists and is linked to the provider → Login
  *       - If the user exists (email match) but not linked → Link provider and login
  *       - If the user does not exist → Create new account and login
@@ -128,6 +128,10 @@
  *       **Requirements:**
  *       - Google: Pass an \`id_token\`
  *       - Facebook: Pass an \`access_token\`
+ *       - Apple: Pass an \`identityToken\` (JWT)
+ *
+ *       **Note on Apple**: Apple only provides the user's name on the *first* sign-in.
+ *       The client should capture this and pass it in the \`name\` field if available.
  *     requestBody:
  *       required: true
  *       content:
@@ -140,11 +144,15 @@
  *             properties:
  *               provider:
  *                 type: string
- *                 enum: [google, facebook]
+ *                 enum: [google, facebook, apple]
  *                 example: google
  *               token:
  *                 type: string
- *                 description: "OAuth 2.0 token (id_token for Google, access_token for Facebook)"
+ *                 description: "OAuth 2.0 token (id_token for Google/Apple, access_token for Facebook)"
+ *               name:
+ *                 type: string
+ *                 example: "John Doe"
+ *                 description: "Optional: User's full name (important for first-time Apple sign-in)"
  *     responses:
  *       200:
  *         description: Social login successful

@@ -12,7 +12,7 @@ const {
   MAX_ATTEMPTS,
   OTP_EXPIRY_MIN,
 } = require('../utils/otpHelper');
-const { verifyGoogleToken, verifyFacebookToken } = require('../utils/socialAuthHelper');
+const { verifyGoogleToken, verifyFacebookToken, verifyAppleToken } = require('../utils/socialAuthHelper');
 
 // ─────────────────────────────────────────────
 // HELPERS
@@ -75,11 +75,11 @@ const createSessionAndTokens = async (user) => {
  * Authenticates user via Google or Facebook.
  * If user doesn't exist, a new account is created & linked.
  *
- * @param {{ provider: 'google'|'facebook', token: string }} data
+ * @param {{ provider: 'google'|'facebook'|'apple', token: string, name?: string }} data
  * @returns {{ user, accessToken, refreshToken }}
  * @throws {AppError}
  */
-const socialLogin = async ({ provider, token }) => {
+const socialLogin = async ({ provider, token, name: providedName }) => {
   let profile;
 
   // 1. Verify token & get profile
@@ -87,6 +87,10 @@ const socialLogin = async ({ provider, token }) => {
     profile = await verifyGoogleToken(token);
   } else if (provider === 'facebook') {
     profile = await verifyFacebookToken(token);
+  } else if (provider === 'apple') {
+    profile = await verifyAppleToken(token);
+    // Apple only sends name on the first login, which may be passed in providedName
+    if (providedName) profile.name = providedName;
   } else {
     throw new AppError('Unsupported social provider.', 400);
   }

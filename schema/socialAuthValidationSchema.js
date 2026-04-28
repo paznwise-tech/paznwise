@@ -10,10 +10,10 @@ const Joi = require('joi');
 const socialAuthValidationSchema = Joi.object({
 
   provider: Joi.string()
-    .valid('google', 'facebook')
+    .valid('google', 'facebook', 'apple')
     .required()
     .messages({
-      'any.only':     'Provider must be either google or facebook.',
+      'any.only':     'Provider must be either google, facebook, or apple.',
       'any.required': 'Provider is required.',
     }),
 
@@ -23,6 +23,14 @@ const socialAuthValidationSchema = Joi.object({
     .messages({
       'string.base':    'Token must be a string.',
       'any.required':   'OAuth token is required.',
+    }),
+
+  name: Joi.string()
+    .trim()
+    .max(100)
+    .optional()
+    .messages({
+      'string.max':     'Name cannot exceed 100 characters.',
     }),
 
 });
