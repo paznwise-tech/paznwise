@@ -21,9 +21,9 @@ const authService = require('../services/auth.service');
  */
 const socialAuth = async (req, res, next) => {
   try {
-    const { provider, token } = req.body;
+    const { provider, token, name } = req.body;
 
-    const result = await authService.socialLogin({ provider, token });
+    const result = await authService.socialLogin({ provider, token, name });
 
     return res.status(200).json({
       success: true,
