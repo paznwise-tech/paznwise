@@ -13,6 +13,9 @@ const cors            = require('cors');
 const swaggerUi       = require('swagger-ui-express');
 const swaggerSpec     = require('./swagger/swaggerConfig');
 const authRoutes      = require('./routes/auth.routes');
+const feedRouter      = require('./src/feed/feed.router');
+const interactRouter  = require('./src/interact/interact.router');
+const { authenticate } = require('./middleware/authMiddleware');
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
@@ -59,6 +62,8 @@ app.get('/api/docs.json', (req, res) => {
 // ROUTES
 // ─────────────────────────────────────────────
 app.use('/api/auth', authRoutes);   // POST /api/auth/signup | /api/auth/login | /api/auth/send-otp | /api/auth/verify-otp
+app.use('/api/feed',     authenticate, feedRouter);      // GET  /api/feed/:userId
+app.use('/api/interact', authenticate, interactRouter);  // POST /api/interact
 
 // ─────────────────────────────────────────────
 // 404 HANDLER
