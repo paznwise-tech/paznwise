@@ -22,16 +22,19 @@ function mapToFeedItem(scoredPost) {
 
   const template = post.price != null
     ? {
-        type:   'product',
-        image:  post.image_url,
-        height: post.height,
-        price:  '₹' + Number(post.price).toLocaleString('en-IN'),
-        title:  post.title,
+        type:        'product',
+        image:       post.image_url,
+        height:      post.height,
+        price:       '₹' + Number(post.price).toLocaleString('en-IN'),
+        title:       post.title,
+        description: post.description,
       }
     : {
-        type:   'image',
-        image:  post.image_url,
-        height: post.height,
+        type:        'image',
+        image:       post.image_url,
+        height:      post.height,
+        title:       post.title,
+        description: post.description,
       };
 
   return {
