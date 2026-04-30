@@ -11,8 +11,8 @@ const options = {
     openapi: '3.0.0',
 
     info: {
-      title:       'Paznwise API',
-      version:     '1.0.0',
+      title: 'Paznwise API',
+      version: '1.0.0',
       description: `
 **Paznwise** — Enterprise-grade RESTful API for the Paznwise platform.
 
@@ -33,7 +33,7 @@ const options = {
 - In development, OTP is logged to the server console for testing
       `.trim(),
       contact: {
-        name:  'Paznwise Team',
+        name: 'Paznwise Team',
         email: 'support@paznwise.com',
       },
       license: {
@@ -43,7 +43,7 @@ const options = {
 
     servers: [
       {
-        url:         'http://localhost:5000',
+        url: 'https://paznwise.gujberry.com',
         description: 'Local Development Server',
       },
     ],
@@ -51,12 +51,16 @@ const options = {
     // ── Tags ──
     tags: [
       {
-        name:        'Auth',
+        name: 'Auth',
         description: 'Authentication & Authorization — Signup, Login, OTP',
       },
       {
-        name:        'Feed',
+        name: 'Feed',
         description: 'Personalised content feed & user interactions',
+      },
+      {
+        name: 'Profile',
+        description: 'User Profile Management',
       },
     ],
 
@@ -64,10 +68,10 @@ const options = {
     components: {
       securitySchemes: {
         BearerAuth: {
-          type:         'http',
-          scheme:       'bearer',
+          type: 'http',
+          scheme: 'bearer',
           bearerFormat: 'JWT',
-          description:  'Enter your JWT access token. Example: `eyJhbGciOi...`',
+          description: 'Enter your JWT access token. Example: `eyJhbGciOi...`',
         },
       },
 
@@ -78,14 +82,14 @@ const options = {
         User: {
           type: 'object',
           properties: {
-            id:         { type: 'string', format: 'uuid', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' },
-            email:      { type: 'string', format: 'email', example: 'user@example.com', nullable: true },
-            phone:      { type: 'string', example: '+919000000003', nullable: true },
-            role:       { type: 'string', enum: ['ARTIST', 'BUYER', 'ORGANIZER', 'ADMIN'], example: 'BUYER' },
-            provider:   { type: 'string', enum: ['EMAIL', 'GOOGLE', 'FACEBOOK', 'OTP'], example: 'EMAIL' },
+            id: { type: 'string', format: 'uuid', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' },
+            email: { type: 'string', format: 'email', example: 'user@example.com', nullable: true },
+            phone: { type: 'string', example: '+919000000003', nullable: true },
+            role: { type: 'string', enum: ['ARTIST', 'BUYER', 'ORGANIZER', 'ADMIN'], example: 'BUYER' },
+            provider: { type: 'string', enum: ['EMAIL', 'GOOGLE', 'FACEBOOK', 'OTP'], example: 'EMAIL' },
             isVerified: { type: 'boolean', example: false },
-            isActive:   { type: 'boolean', example: true },
-            createdAt:  { type: 'string', format: 'date-time', example: '2026-04-22T06:30:00.000Z' },
+            isActive: { type: 'boolean', example: true },
+            createdAt: { type: 'string', format: 'date-time', example: '2026-04-22T06:30:00.000Z' },
           },
         },
 
@@ -98,8 +102,8 @@ const options = {
             data: {
               type: 'object',
               properties: {
-                user:         { $ref: '#/components/schemas/User' },
-                accessToken:  { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
+                user: { $ref: '#/components/schemas/User' },
+                accessToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
                 refreshToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
               },
             },
@@ -135,7 +139,7 @@ const options = {
               items: {
                 type: 'object',
                 properties: {
-                  field:   { type: 'string', example: 'email' },
+                  field: { type: 'string', example: 'email' },
                   message: { type: 'string', example: 'Please provide a valid email address.' },
                 },
               },
@@ -147,39 +151,39 @@ const options = {
         FeedItem: {
           type: 'object',
           properties: {
-            id:             { type: 'integer' },
-            artistId:       { type: 'string' },
+            id: { type: 'integer' },
+            artistId: { type: 'string' },
             template: {
               oneOf: [
                 {
                   type: 'object',
                   properties: {
-                    type:   { type: 'string', enum: ['product'] },
-                    image:  { type: 'string' },
+                    type: { type: 'string', enum: ['product'] },
+                    image: { type: 'string' },
                     height: { type: 'integer' },
-                    price:  { type: 'string' },
-                    title:  { type: 'string' },
+                    price: { type: 'string' },
+                    title: { type: 'string' },
                   },
                 },
                 {
                   type: 'object',
                   properties: {
-                    type:   { type: 'string', enum: ['image'] },
-                    image:  { type: 'string' },
+                    type: { type: 'string', enum: ['image'] },
+                    image: { type: 'string' },
                     height: { type: 'integer' },
                   },
                 },
               ],
             },
-            category:       { type: 'string' },
-            style:          { type: 'string', nullable: true },
-            finalScore:     { type: 'number' },
-            likesCount:     { type: 'integer' },
-            savesCount:     { type: 'integer' },
-            commentsCount:  { type: 'integer' },
-            isPromoted:     { type: 'boolean' },
-            tags:           { type: 'array', items: { type: 'string' } },
-            createdAt:      { type: 'string', format: 'date-time' },
+            category: { type: 'string' },
+            style: { type: 'string', nullable: true },
+            finalScore: { type: 'number' },
+            likesCount: { type: 'integer' },
+            savesCount: { type: 'integer' },
+            commentsCount: { type: 'integer' },
+            isPromoted: { type: 'boolean' },
+            tags: { type: 'array', items: { type: 'string' } },
+            createdAt: { type: 'string', format: 'date-time' },
           },
         },
 
@@ -195,8 +199,8 @@ const options = {
             meta: {
               type: 'object',
               properties: {
-                coldStart:       { type: 'boolean' },
-                diversityScore:  { type: 'number' },
+                coldStart: { type: 'boolean' },
+                diversityScore: { type: 'number' },
                 totalCandidates: { type: 'integer' },
               },
             },
