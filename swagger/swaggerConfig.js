@@ -54,6 +54,10 @@ const options = {
         name:        'Auth',
         description: 'Authentication & Authorization — Signup, Login, OTP',
       },
+      {
+        name:        'Feed',
+        description: 'Personalised content feed & user interactions',
+      },
     ],
 
     // ── Security Schemes ──
@@ -138,12 +142,72 @@ const options = {
             },
           },
         },
+
+        // ─── Feed Item ───
+        FeedItem: {
+          type: 'object',
+          properties: {
+            id:             { type: 'integer' },
+            artistId:       { type: 'string' },
+            template: {
+              oneOf: [
+                {
+                  type: 'object',
+                  properties: {
+                    type:   { type: 'string', enum: ['product'] },
+                    image:  { type: 'string' },
+                    height: { type: 'integer' },
+                    price:  { type: 'string' },
+                    title:  { type: 'string' },
+                  },
+                },
+                {
+                  type: 'object',
+                  properties: {
+                    type:   { type: 'string', enum: ['image'] },
+                    image:  { type: 'string' },
+                    height: { type: 'integer' },
+                  },
+                },
+              ],
+            },
+            category:       { type: 'string' },
+            style:          { type: 'string', nullable: true },
+            finalScore:     { type: 'number' },
+            likesCount:     { type: 'integer' },
+            savesCount:     { type: 'integer' },
+            commentsCount:  { type: 'integer' },
+            isPromoted:     { type: 'boolean' },
+            tags:           { type: 'array', items: { type: 'string' } },
+            createdAt:      { type: 'string', format: 'date-time' },
+          },
+        },
+
+        // ─── Feed Response ───
+        FeedResponse: {
+          type: 'object',
+          properties: {
+            items: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/FeedItem' },
+            },
+            nextCursor: { type: 'string', nullable: true },
+            meta: {
+              type: 'object',
+              properties: {
+                coldStart:       { type: 'boolean' },
+                diversityScore:  { type: 'number' },
+                totalCandidates: { type: 'integer' },
+              },
+            },
+          },
+        },
       },
     },
   },
 
   // ── Where to find JSDoc annotations ──
-  apis: ['./swagger/docs/*.js'],
+  apis: ['./swagger/docs/*.js', './src/feed/*.js', './src/interact/*.js'],
 };
 
 const swaggerSpec = swaggerJsdoc(options);
