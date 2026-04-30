@@ -8,16 +8,17 @@ require('dotenv').config();
 // ─────────────────────────────────────────────
 // IMPORTS
 // ─────────────────────────────────────────────
-const express         = require('express');
-const cors            = require('cors');
-const swaggerUi       = require('swagger-ui-express');
-const swaggerSpec     = require('./swagger/swaggerConfig');
-const authRoutes      = require('./routes/auth.routes');
-const feedRouter      = require('./src/feed/feed.router');
-const interactRouter  = require('./src/interact/interact.router');
+const express = require('express');
+const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./swagger/swaggerConfig');
+const authRoutes = require('./routes/auth.routes');
+const userProfileRoutes = require('./user-profile-services/user_profile.routes');
+const feedRouter = require('./src/feed/feed.router');
+const interactRouter = require('./src/interact/interact.router');
 const { authenticate } = require('./middleware/authMiddleware');
 
-const app  = express();
+const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ─────────────────────────────────────────────
@@ -42,13 +43,13 @@ app.get('/', (req, res) => {
 // SWAGGER DOCS
 // ─────────────────────────────────────────────
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss:      '.swagger-ui .topbar { display: none }',
+  customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: 'Paznwise API Docs',
   swaggerOptions: {
     persistAuthorization: true,
-    docExpansion:         'list',
-    filter:               true,
-    tryItOutEnabled:      true,
+    docExpansion: 'list',
+    filter: true,
+    tryItOutEnabled: true,
   },
 }));
 
@@ -62,7 +63,8 @@ app.get('/api/docs.json', (req, res) => {
 // ROUTES
 // ─────────────────────────────────────────────
 app.use('/api/auth', authRoutes);   // POST /api/auth/signup | /api/auth/login | /api/auth/send-otp | /api/auth/verify-otp
-app.use('/api/feed',     authenticate, feedRouter);      // GET  /api/feed/:userId
+app.use('/api/users/profile', userProfileRoutes); // User Profile Service
+app.use('/api/feed', authenticate, feedRouter);      // GET  /api/feed/:userId
 app.use('/api/interact', authenticate, interactRouter);  // POST /api/interact
 
 // ─────────────────────────────────────────────
@@ -80,7 +82,7 @@ app.use((req, res) => {
 // ─────────────────────────────────────────────
 app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
   const statusCode = err.statusCode || 500;
-  const message    = err.isOperational ? err.message : 'An unexpected error occurred.';
+  const message = err.isOperational ? err.message : 'An unexpected error occurred.';
 
   if (!err.isOperational) {
     console.error('[Unhandled Error]', err);
